@@ -3,17 +3,24 @@ package handlers
 import (
 	"fmt"
 	"go/ast"
+	"strings"
 
 	"github.com/kristiehoward/go2flow/typeutils"
 )
 
 func handleField(f ast.Field) {
+	if f.Names == nil {
+		// This is an anonymous struct.  We need to add the struct
+		// fields to this type definition.
+		return
+	}
+
 	tag := f.Tag.Value
 	// A field is optional if the json tag includes `omitempty`
 	name, isOptional := typeutils.GetTagInfo(tag)
 	// A field is nullable if the identifier is a pointer (nil pointer --> null JSON)
 	isNullable := typeutils.IsNullable(f)
-	if name == "" {
+	if name == "" || name == "-" {
 		return
 	}
 
@@ -60,11 +67,27 @@ func HandleTypeDef(ts ast.TypeSpec) {
 		fmt.Printf("export type %s = {[%s]: %s};\n\n", ts.Name, keyType, valueType)
 		return
 	case *ast.StructType:
-		fmt.Printf("export type %s {\n", ts.Name)
 		fields := t.Fields.List
+
+		intersections := []string{}
+		for _, field := range fields {
+			if field.Names == nil {
+				// Get type name for intersections of anonymous structs
+				typ := field.Type.(*ast.Ident)
+				intersections = append(intersections, typ.Name)
+			}
+		}
+
+		if len(intersections) > 0 {
+			fmt.Printf("export type %s = %s & {\n", ts.Name, strings.Join(intersections, " & "))
+		} else {
+			fmt.Printf("export type %s = {\n", ts.Name)
+		}
+
 		for _, field := range fields {
 			handleField(*field)
 		}
+
 		fmt.Printf("}\n\n")
 		return
 		// Don't handle anything else
