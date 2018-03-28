@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/kristiehoward/go2flow/handlers"
+	"github.com/tonyhb/go2flow/handlers"
 	"github.com/urfave/cli"
 )
 

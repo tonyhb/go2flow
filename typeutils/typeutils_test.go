@@ -3,8 +3,8 @@ package typeutils
 import (
 	"testing"
 
-	"github.com/kristiehoward/go2flow/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/tonyhb/go2flow/utils"
 )
 
 // TODO Kristie 10/24/17 - Update to include the edge cases in

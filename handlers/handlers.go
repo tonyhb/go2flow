@@ -3,14 +3,28 @@ package handlers
 import (
 	"fmt"
 	"go/ast"
+	"strings"
 
-	"github.com/kristiehoward/go2flow/typeutils"
+	"github.com/tonyhb/go2flow/typeutils"
 )
 
 func handleField(f ast.Field) {
-	tag := f.Tag.Value
-	// A field is optional if the json tag includes `omitempty`
-	name, isOptional := typeutils.GetTagInfo(tag)
+	name := ""
+	isOptional := false
+
+	if f.Tag != nil {
+		tag := f.Tag.Value
+		// A field is optional if the json tag includes `omitempty`
+		if tag == "-" {
+			return
+		}
+		if strings.Contains(tag, "json:\"-\"") {
+			return
+		}
+
+		name, isOptional = typeutils.GetTagInfo(tag)
+	}
+
 	// A field is nullable if the identifier is a pointer (nil pointer --> null JSON)
 	isNullable := typeutils.IsNullable(f)
 	if name == "" {
