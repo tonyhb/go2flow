@@ -9,25 +9,24 @@ import (
 )
 
 func handleField(f ast.Field) {
+	if f.Names == nil {
+		// This is an anonymous struct.  We need to add the struct
+		// fields to this type definition.
+		return
+	}
+
 	name := ""
 	isOptional := false
 
 	if f.Tag != nil {
 		tag := f.Tag.Value
 		// A field is optional if the json tag includes `omitempty`
-		if tag == "-" {
-			return
-		}
-		if strings.Contains(tag, "json:\"-\"") {
-			return
-		}
-
 		name, isOptional = typeutils.GetTagInfo(tag)
 	}
 
 	// A field is nullable if the identifier is a pointer (nil pointer --> null JSON)
 	isNullable := typeutils.IsNullable(f)
-	if name == "" {
+	if name == "" || name == "-" {
 		return
 	}
 
@@ -74,11 +73,44 @@ func HandleTypeDef(ts ast.TypeSpec) {
 		fmt.Printf("export type %s = {[%s]: %s};\n\n", ts.Name, keyType, valueType)
 		return
 	case *ast.StructType:
-		fmt.Printf("export type %s {\n", ts.Name)
 		fields := t.Fields.List
+
+		intersections := []string{}
+		for _, field := range fields {
+			if field.Names == nil {
+				// Get type name for intersections of anonymous structs
+				if pointer, ok := field.Type.(*ast.StarExpr); ok {
+					// This is an embedded pointer.
+					switch x := pointer.X.(type) {
+					case *ast.SelectorExpr:
+						fmt.Printf("%#v", x.Sel)
+						intersections = append(intersections, x.Sel.Name)
+					case *ast.Ident:
+						intersections = append(intersections, x.Name)
+					}
+					continue
+				}
+
+				if typ, ok := field.Type.(*ast.Ident); ok {
+					intersections = append(intersections, typ.Name)
+				} else {
+					fmt.Printf("%#v", field.Type)
+				}
+			}
+		}
+
+		if len(intersections) > 0 {
+			// We're extending a type by embedding it.  Do we even have any fields?
+			// TODO
+			fmt.Printf("export type %s = %s & {\n", ts.Name, strings.Join(intersections, " & "))
+		} else {
+			fmt.Printf("export type %s = {\n", ts.Name)
+		}
+
 		for _, field := range fields {
 			handleField(*field)
 		}
+
 		fmt.Printf("}\n\n")
 		return
 		// Don't handle anything else
