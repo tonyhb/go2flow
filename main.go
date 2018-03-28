@@ -72,6 +72,9 @@ func run(c *cli.Context) error {
 		}
 
 		for _, f := range files {
+			if f.IsDir() {
+				continue
+			}
 			err := handleFile(dir + "/" + f.Name())
 			if err != nil {
 				return err
