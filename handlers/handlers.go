@@ -83,7 +83,6 @@ func HandleTypeDef(ts ast.TypeSpec) {
 					// This is an embedded pointer.
 					switch x := pointer.X.(type) {
 					case *ast.SelectorExpr:
-						fmt.Printf("%#v", x.Sel)
 						intersections = append(intersections, x.Sel.Name)
 					case *ast.Ident:
 						intersections = append(intersections, x.Name)
