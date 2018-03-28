@@ -13,6 +13,7 @@ var goTypeToFlowType = map[string]string{
 	"bool":      "boolean",
 	"int":       "number",
 	"int64":     "number",
+	"float64":   "number",
 	"string":    "string",
 	"time.Time": "string",
 }
